@@ -32,66 +32,46 @@ def play():
     # Set the window caption for the play screen
     pygame.display.set_caption("Play!")
 
-    global width, height, screen, square_side, font
+    global width, height, screen, square_side, font, rects
 
-    screen.fill(background_color)
-    draw_lines()
-
-    rects = create_rects()
+    rects = create_rects()  # Create the rectangles once
+    initialize_buttons()
 
     while True:
         play_mouse_position = pygame.mouse.get_pos()
-        screen.fill(background_color)
-        draw_lines()
-        rects = create_rects()
-
-        # Create the back button for the play screen
-        play_back = Button(image=pygame.transform.scale(button_image, (square_side * 8 // 3, square_side * 6 // 5)), 
-                           x_position=(width // 2), y_position=(15 * square_side // 2),
-                           text_imput="BACK", font=pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 4))
-        play_back.update(screen)
-
+        
+        # Event handling
         for event in pygame.event.get():
-            # Click top right red "x"
+            screen_resize(event)  # Handle screen resizing
+
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-            # Mouse click anywhere
             if event.type == pygame.MOUSEBUTTONDOWN:
-                for name, attributes in rects.items(): # Name is the key, and attributes is the value, of each one of the 9 items in the dict
-                    rect = attributes["rect"] # Attributes is the value, but it's a dict as well
+                # Check which rectangle was clicked
+                for name, attributes in rects.items():
+                    rect = attributes["rect"]
+                    if rect.collidepoint(play_mouse_position):
+                        if not attributes["clicked"]:  # Ensure it's not already clicked
+                            attributes["clicked"] = True
+                            attributes["player"] = "x"
+                            draw_x(rect) # Draws the X as a immediatly feedback
 
-            # Mouse up and button pressed
             if event.type == pygame.MOUSEBUTTONUP:
                 if play_back.check(play_mouse_position):
                     main_menu()
 
-            if event.type == VIDEORESIZE:
-                # Calculate new dimensions maintaining aspect ratio
-                new_width, new_height = maintain_ratio(event.w, event.h)
+        # Drawing, because screen gets refreshed every frame
+        screen.fill(background_color)  # Clear screen with background color
+        draw_lines()  # Draw static grid lines
 
-                # Update screen dimensions if they have changed
-                if (new_width, new_height) != (width, height):
-                    width, height = new_width, new_height
-                    screen = pygame.display.set_mode((width, height), RESIZABLE)
-                    square_side = height // 8  # Update square_side after resize
-                    font = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 2)  # Update font size after resize
-                    draw_lines()
-                    rects = create_rects()
+        # Draw rectangles and buttons
+        for name, attributes in rects.items():
+            if attributes["clicked"] and attributes["player"] == "x":
+                draw_x(attributes["rect"])
 
-            # Prevent fullscreening
-            if event.type == FULLSCREEN:
-                pass
-
-            # Prevent resizing beyond limit
-            if event.type == KEYDOWN:
-                if event.key == K_UP and event.mod & KMOD_META:  # Windows key + up arrow
-                    pass
-                elif event.key == K_LEFT and event.mod & KMOD_META:  # Windows key + left arrow
-                    pass
-                elif event.key == K_RIGHT and event.mod & KMOD_META:  # Windows key + right arrow
-                    pass
+        play_back.update(screen)  # Update the back button
 
         pygame.display.update()
 
@@ -115,12 +95,7 @@ def main_menu():
         menu_rect_2 = menu_text_2.get_rect(center=(width // 2, 2 * square_side))
 
         # Create buttons
-        play_button = Button(image=pygame.transform.scale(button_image, (square_side * 9 // 2, square_side * 9 // 4)), 
-                             x_position=(width // 2), y_position=(7 * square_side // 2),
-                             text_imput="PLAY", font=font)
-        quit_button = Button(image=pygame.transform.scale(button_image, (square_side * 9 // 2, square_side * 9 // 4)), 
-                             x_position=(width // 2), y_position=(5 * square_side),
-                             text_imput="QUIT", font=font)
+        initialize_buttons()
         
         screen.blit(menu_text, menu_rect)
         screen.blit(menu_text_2, menu_rect_2)
@@ -131,6 +106,7 @@ def main_menu():
         
         for event in pygame.event.get():
             
+            screen_resize(event)
             # Top right corner red "x" is clicked
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -147,30 +123,6 @@ def main_menu():
                 if quit_button.check(menu_mouse_position):
                     pygame.quit()
                     sys.exit()
-
-            if event.type == VIDEORESIZE:
-                # Calculate new dimensions maintaining aspect ratio
-                new_width, new_height = maintain_ratio(event.w, event.h)
-
-                # Update screen dimensions if they have changed
-                if (new_width, new_height) != (width, height):
-                    width, height = new_width, new_height
-                    screen = pygame.display.set_mode((width, height), RESIZABLE)
-                    square_side = height // 8  # Update square_side after resize
-                    font = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 2)  # Update font size after resize
-
-            # Prevent fullscreening
-            if event.type == FULLSCREEN:
-                pass
-
-            # Prevent resizing beyond limit
-            if event.type == KEYDOWN:
-                if event.key == K_UP and event.mod & KMOD_META:  # Windows key + up arrow
-                    pass
-                elif event.key == K_LEFT and event.mod & KMOD_META:  # Windows key + left arrow
-                    pass
-                elif event.key == K_RIGHT and event.mod & KMOD_META:  # Windows key + right arrow
-                    pass
 
         pygame.display.update()
 
@@ -214,6 +166,7 @@ def draw_lines():
 
 # Create the board. A dict that has 9 values, the position and if clicked    
 def create_rects():
+    global rects
     rect_side = 2 * square_side
     rects = {}
     for i in range(3):
@@ -228,5 +181,57 @@ def create_rects():
             }
     return rects
 
+
+def screen_resize(event):
+
+    global width, height, square_side, font, rects
+
+    if event.type == VIDEORESIZE:
+        new_width, new_height = maintain_ratio(event.w, event.h)
+
+        if (new_width, new_height) != (width, height):
+            width, height = new_width, new_height
+            screen = pygame.display.set_mode((width, height), RESIZABLE)
+            square_side = height // 8
+            font = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 2)
+
+            # Update rects with new positions and sizes
+            rect_side = 2 * square_side
+            for i in range(3):
+                for j in range(3):
+                    rect_name = f"rect_{i * 3 + j + 1}"
+                    rects[rect_name]["rect"] = pygame.Rect(j * rect_side, (square_side + i * rect_side), rect_side, rect_side)
+            
+            # Initialize buttons again after resize
+            initialize_buttons()
+
+            # Update button positions
+            update_buttons_positions()
+
+        
+def draw_x(rect):
+    pygame.draw.line(screen, line_color, ((rect.left + square_side / 3), (rect.top + square_side / 3)), ((rect.right - square_side / 3), (rect.bottom - square_side / 3)), int(square_side / 9))
+    pygame.draw.line(screen, line_color, ((rect.left + square_side / 3), (rect.bottom - square_side / 3)), ((rect.right - square_side / 3), (rect.top + square_side / 3)), int(square_side / 9))
+
+def initialize_buttons():
+    global play_back, play_button, quit_button
+    play_back = Button(image=pygame.transform.scale(button_image, (square_side * 8 // 3, square_side * 6 // 5)), 
+                       x_position=(width // 2), y_position=(15 * square_side // 2),
+                       text_imput="BACK", font=pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 4))
+    play_button = Button(image=pygame.transform.scale(button_image, (square_side * 9 // 2, square_side * 9 // 4)), 
+                             x_position=(width // 2), y_position=(7 * square_side // 2),
+                             text_imput="PLAY", font=font)
+    quit_button = Button(image=pygame.transform.scale(button_image, (square_side * 9 // 2, square_side * 9 // 4)), 
+                             x_position=(width // 2), y_position=(5 * square_side),
+                             text_imput="QUIT", font=font)
+
+def update_buttons_positions():
+    global play_back, play_button, quit_button
+    play_back.x_position = width // 2
+    play_back.y_position = 15 * square_side // 2
+    play_button.x_position = width // 2
+    play_button.y_position = 7 * square_side // 2
+    quit_button.x_position = width // 2
+    quit_button.y_position = 5 * square_side
 
 main_menu()
