@@ -49,14 +49,12 @@ def play():
                 sys.exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                # Check which rectangle was clicked
-                for name, attributes in rects.items():
-                    rect = attributes["rect"]
+                # Check which rectangle was clicked, by checking the index of the list
+                for index, rect in enumerate(rects):
                     if rect.collidepoint(play_mouse_position):
-                        if not attributes["clicked"]:  # Ensure it's not already clicked
-                            attributes["clicked"] = True
-                            attributes["player"] = "x"
-                            draw_x(rect) # Draws the X as a immediatly feedback
+                        moves[index] = "x" # Store the information of who clicked
+                        draw_x(rect) # Draws the X as a immediatly feedback
+                        print(check_winner("x"))
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if play_back.check(play_mouse_position):
@@ -65,16 +63,13 @@ def play():
         # Drawing, because screen gets refreshed every frame
         screen.fill(background_color)  # Clear screen with background color
         draw_lines()  # Draw static grid lines
-
-        # Draw rectangles and buttons
-        for name, attributes in rects.items():
-            if attributes["clicked"] and attributes["player"] == "x":
-                draw_x(attributes["rect"])
+        for index, rect in enumerate(rects):
+            if moves[index] == "x":  # Check if the move was made by "x"
+                draw_x(rect)
 
         play_back.update(screen)  # Update the back button
 
         pygame.display.update()
-
 
 
 def main_menu():
@@ -164,22 +159,36 @@ def draw_lines():
         pygame.draw.line(screen, line_color, (x_value, square_side), (x_value, 7 * square_side), 4)
         x_value += 2 * square_side
 
-# Create the board. A dict that has 9 values, the position and if clicked    
+ 
 def create_rects():
-    global rects
+    global rects, moves
     rect_side = 2 * square_side
-    rects = {}
-    for i in range(3):
-        for j in range(3):
-            rect_name = f"rect_{i * 3 + j + 1}"
-            rect = pygame.Rect(j * rect_side, (square_side + i * rect_side), rect_side, rect_side)
-            rects[rect_name] = {
-                "rect": rect,
-                "name": rect_name,
-                "clicked": False,
-                "player": ""
-            }
+    rects = [pygame.Rect(j * rect_side, (square_side + i * rect_side), rect_side, rect_side) for i in range(3) for j in range(3)]
+    moves = ["none"] * 9  # Initialize moves with "none" for each cell
     return rects
+
+# Checks if a player has won the game
+def check_winner(player):
+    winning_combinations = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6]
+    ]
+
+    for combination in winning_combinations: # Iterate through all the lists in the combinations list
+        win = True
+        for index in combination: # Iterate through all the elements of the current list
+            if moves[index] != player: # Uses the element as index to the moves list, that has all the information. If not True, the player did not won in that way
+                win = False
+                break
+        if win:  # If win is still True after checking the combination
+            return True
+    return False # None of the list combinations has been found True
 
 
 def screen_resize(event):
@@ -197,10 +206,7 @@ def screen_resize(event):
 
             # Update rects with new positions and sizes
             rect_side = 2 * square_side
-            for i in range(3):
-                for j in range(3):
-                    rect_name = f"rect_{i * 3 + j + 1}"
-                    rects[rect_name]["rect"] = pygame.Rect(j * rect_side, (square_side + i * rect_side), rect_side, rect_side)
+            rects = [pygame.Rect(j * rect_side, (square_side + i * rect_side), rect_side, rect_side) for i in range(3) for j in range(3)]
             
             # Initialize buttons again after resize
             initialize_buttons()
@@ -208,10 +214,11 @@ def screen_resize(event):
             # Update button positions
             update_buttons_positions()
 
-        
+
 def draw_x(rect):
     pygame.draw.line(screen, line_color, ((rect.left + square_side / 3), (rect.top + square_side / 3)), ((rect.right - square_side / 3), (rect.bottom - square_side / 3)), int(square_side / 9))
     pygame.draw.line(screen, line_color, ((rect.left + square_side / 3), (rect.bottom - square_side / 3)), ((rect.right - square_side / 3), (rect.top + square_side / 3)), int(square_side / 9))
+
 
 def initialize_buttons():
     global play_back, play_button, quit_button
@@ -224,6 +231,7 @@ def initialize_buttons():
     quit_button = Button(image=pygame.transform.scale(button_image, (square_side * 9 // 2, square_side * 9 // 4)), 
                              x_position=(width // 2), y_position=(5 * square_side),
                              text_imput="QUIT", font=font)
+
 
 def update_buttons_positions():
     global play_back, play_button, quit_button
