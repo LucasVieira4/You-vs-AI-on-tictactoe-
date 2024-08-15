@@ -2,14 +2,15 @@ text_color = (23, 23, 19)
 line_color = (190, 188, 185)
 
 class Button():
-    def __init__(self, image, x_position, y_position, text_imput, font):
+    def __init__(self, image, x_position, y_position, text_input, font):
         self.image = image
         self.x_position = x_position
         self.y_position = y_position
         self.rect = self.image.get_rect(center = (self.x_position, self.y_position))
-        self.text_input = text_imput
+        self.text_input = text_input
         self.text = font.render(self.text_input, True, line_color)
         self.text_rect = self.text.get_rect(center = (self.x_position, self.y_position))
+        print(f"Button rect size: {self.rect.width}x{self.rect.height}")
 
     def update(self, screen):
         # Puts button image on the screen
