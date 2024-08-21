@@ -1,4 +1,4 @@
-import pygame, sys, os
+import pygame, sys
 from pygame.locals import *
 from button import Button
 
@@ -30,74 +30,6 @@ button_image = pygame.image.load("assets/button.png")
 hu_player = "x"
 ai_player = "o"
 
-def play():
-    
-    # Set the window caption for the play screen
-    pygame.display.set_caption("Play!")
-
-    global width, height, screen, square_side, font, rects
-
-    rects = create_rects()  # Create the rectangles once
-    initialize_buttons()
-
-    while True:
-        play_mouse_position = pygame.mouse.get_pos()
-        
-        # Event handling
-        for event in pygame.event.get():
-            screen_resize(event)  # Handle screen resizing
-
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                # Check which rectangle was clicked, by checking the index of the list
-                for index, rect in enumerate(rects):
-                    if rect.collidepoint(play_mouse_position) and board[index] == "none":
-                        # Store the information of who clicked
-                        board[index] = hu_player
-
-                        # Draws the X as a immediatly feedback
-                        draw_x(rect)
-
-                        # Check if there's a win
-                        if check_winner(board, hu_player):
-                            win()
-                        # Check if there are no available spots
-                        elif len(available_spots(board)) == 0:  
-                            draw()
-
-                        # Call the minimax and find the best move for the ai
-                        ai_move = minimax(board, ai_player) 
-                        # Get what index minimax returned and define the rect that should be played based in that index
-                        ai_rect = rects[ai_move["index"]]
-                        # Store the information of where the ai played
-                        board[ai_move["index"]] = ai_player
-
-                        # Draws the O as a immediatly feedback
-                        draw_o(ai_rect)   
-                        # Check if the player did not lose yet
-                        if check_winner(board, ai_player):
-                            loss()
-
-            if event.type == pygame.MOUSEBUTTONUP:
-                if back_button.check(play_mouse_position):
-                    main_menu()
-
-        # Drawing, because screen gets refreshed every frame
-        screen.fill(background_color)  # Clear screen with background color
-        draw_lines()  # Draw static grid lines
-        for index, rect in enumerate(rects):
-            if board[index] == hu_player:  # Check if the move was made by "x"
-                draw_x(rect)
-            elif board[index] == ai_player:
-                draw_o(rect)
-
-        back_button.update(screen)  # Draws the back button
-
-        pygame.display.update()
-
 
 def main_menu():
     
@@ -128,9 +60,11 @@ def main_menu():
         play_button.update(screen)
         quit_button.update(screen)
         
+        # Event handlers
         for event in pygame.event.get():
             
-            screen_resize(event)
+            if event.type == VIDEORESIZE:
+                screen_resize(event)
             # Top right corner red "x" is clicked
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -144,6 +78,159 @@ def main_menu():
                     sys.exit()
 
         pygame.display.update()
+
+
+def play():
+    
+    # Set the window caption for the play screen
+    pygame.display.set_caption("Play!")
+
+    global width, height, screen, square_side, font, rects
+
+    rects = create_rects()  # Create the rectangles once
+    initialize_buttons()
+
+    while True:
+        play_mouse_position = pygame.mouse.get_pos()
+        
+        # Event handling
+        for event in pygame.event.get():
+            if event.type == VIDEORESIZE:
+                screen_resize(event)  # Handle screen resizing
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            
+            if event.type == pygame.MOUSEBUTTONUP:
+                if back_button.check(play_mouse_position):
+                    main_menu()
+            
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # Check which rectangle was clicked, by checking the index of the list
+                for index, rect in enumerate(rects):
+                    if rect.collidepoint(play_mouse_position) and board[index] == "none":
+                        # Store the information of who clicked
+                        board[index] = hu_player
+
+                        # Draw the X as immediate feedback
+                        draw_x(rect)
+
+                        # Check if there's a win
+                        if check_winner(board, hu_player):
+                            endgame("win")
+                        # Check if there are no available spots
+                        elif len(available_spots(board)) == 0:  
+                            endgame("draw")
+
+                        # Call the minimax and find the best move for the ai
+                        ai_move = minimax(board, ai_player) 
+                        # Get what index minimax returned and define the rect that should be played based in that index
+                        ai_rect = rects[ai_move["index"]]
+                        # Store the information of where the ai played
+                        board[ai_move["index"]] = ai_player
+
+                        # Draw the O as immediate feedback
+                        draw_o(ai_rect)   
+                        # Check if the player did not lose yet
+                        if check_winner(board, ai_player):
+                            endgame("loss")
+
+        # Drawing, because screen gets refreshed every frame
+        screen.fill(background_color)  # Clear screen with background color
+        draw_lines()  # Draw static grid lines
+        for index, rect in enumerate(rects):
+            if board[index] == hu_player:  # Check if the move was made by "x"
+                draw_x(rect)
+            elif board[index] == ai_player:
+                draw_o(rect)
+
+        back_button.update(screen)  # Draws the back button
+
+        pygame.display.update()
+
+
+def endgame(result):
+
+    pygame.display.set_caption("Endgame")
+    initialize_buttons()
+    
+    while True:
+        draw_mouse_position = pygame.mouse.get_pos()
+        
+        screen.fill(background_color)  # Clear screen with background color
+        
+        won_text = font.render("YOU WON :)", True, line_color)
+        won_text_2 = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 3).render("CONGRATULATIONS!", True, line_color)
+        won_rect = won_text.get_rect(center=(width // 2, 3 * square_side // 2))
+        won_rect_2 = won_text_2.get_rect(center=(width // 2, 2 * square_side))
+
+        draw_text = font.render("IT'S A DRAW :/", True, line_color)
+        draw_text_2 = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 3).render("AT LEAST IT'S NOT A DEFEAT...", True, line_color)
+        draw_rect = draw_text.get_rect(center=(width // 2, 3 * square_side // 2))
+        draw_rect_2 = draw_text_2.get_rect(center=(width // 2, 2 * square_side))
+
+        loss_text = font.render("YOU LOST :(", True, line_color)
+        loss_text_2 = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 3).render("WHAT A PITY...", True, line_color)
+        loss_rect = loss_text.get_rect(center=(width // 2, 3 * square_side // 2))
+        loss_rect_2 = loss_text_2.get_rect(center=(width // 2, 2 * square_side))
+        
+        if result == "loss":
+            screen.blit(loss_text, loss_rect)
+            screen.blit(loss_text_2, loss_rect_2)
+        
+        elif result == "win":
+            screen.blit(won_text, won_rect)
+            screen.blit(won_text_2, won_rect_2)
+
+        else:
+            screen.blit(draw_text, draw_rect)
+            screen.blit(draw_text_2, draw_rect_2)
+
+        # Event handling
+        for event in pygame.event.get():
+            
+            if event.type == VIDEORESIZE:
+                screen_resize(event)  # Handle screen resizing
+
+            # Top right corner red "x" is clicked
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if again_button.check(draw_mouse_position):
+                    play()
+                if quit_button.check(draw_mouse_position):
+                    pygame.quit()
+                    sys.exit()
+        
+        quit_button.update(screen) # Draws quit button
+        again_button.update(screen) # Draws try again button
+        pygame.display.update()
+
+
+def screen_resize(event):
+
+    global width, height, square_side, font, rects
+
+    new_width, new_height = maintain_ratio(event.w, event.h)
+
+    if (new_width, new_height) != (width, height):
+        width, height = new_width, new_height
+        screen = pygame.display.set_mode((width, height), RESIZABLE)
+        square_side = height // 8
+        font = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 2)
+
+        # Update rects with new positions and sizes
+        rect_side = 2 * square_side
+        rects = [pygame.Rect(j * rect_side, (square_side + i * rect_side), rect_side, rect_side) for i in range(3) for j in range(3)]
+        
+        # Initialize buttons again after resize
+        initialize_buttons()
+
+        # Update button positions
+        update_buttons_positions()
 
 # Function that calculates the 3:4 aspect ratio
 def maintain_ratio(event_w, event_h):
@@ -171,81 +258,6 @@ def maintain_ratio(event_w, event_h):
         new_width = (max_height * 3) / 4
 
     return int(new_width), int(new_height)
-
-
-def draw_lines():
-    y_value = square_side
-    x_value = square_side * 2
-    for i in range(1, 5):
-        pygame.draw.line(screen, line_color, (0, y_value), (width, y_value), 4)
-        y_value += 2 * square_side
-    for i in range(1, 3):
-        pygame.draw.line(screen, line_color, (x_value, square_side), (x_value, 7 * square_side), 4)
-        x_value += 2 * square_side
-
-
-def draw_x(rect):
-    pygame.draw.line(screen, line_color, ((rect.left + square_side / 3), (rect.top + square_side / 3)), ((rect.right - square_side / 3), (rect.bottom - square_side / 3)), int(square_side / 9))
-    pygame.draw.line(screen, line_color, ((rect.left + square_side / 3), (rect.bottom - square_side / 3)), ((rect.right - square_side / 3), (rect.top + square_side / 3)), int(square_side / 9))
-
-
-def draw_o(rect):
-    pygame.draw.circle(screen, line_color, rect.center, (square_side * 3 / 4), int(square_side / 13))
- 
-
-def create_rects():
-    global rects, board
-    rect_side = 2 * square_side
-    rects = [pygame.Rect(j * rect_side, (square_side + i * rect_side), rect_side, rect_side) for i in range(3) for j in range(3)]
-    board = ["none"] * 9  # Initialize board with "none" for each cell
-    return rects
-
-# Checks if a player has won the game
-def check_winner(board, player):
-    winning_combinations = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        [0, 4, 8],
-        [2, 4, 6]
-    ]
-
-    for combination in winning_combinations: # Iterate through all the lists in the combinations list
-        win = True
-        for index in combination: # Iterate through all the elements of the current list
-            if board[index] != player: # Uses the element as index to the board list, that has all the information. If not True, the player did not won in that way
-                win = False
-                break
-        if win:  # If win is still True after checking the combination
-            return True
-    return False # None of the list combinations has been found True
-
-
-def screen_resize(event):
-
-    global width, height, square_side, font, rects
-
-    if event.type == VIDEORESIZE:
-        new_width, new_height = maintain_ratio(event.w, event.h)
-
-        if (new_width, new_height) != (width, height):
-            width, height = new_width, new_height
-            screen = pygame.display.set_mode((width, height), RESIZABLE)
-            square_side = height // 8
-            font = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 2)
-
-            # Update rects with new positions and sizes
-            rect_side = 2 * square_side
-            rects = [pygame.Rect(j * rect_side, (square_side + i * rect_side), rect_side, rect_side) for i in range(3) for j in range(3)]
-            
-            # Initialize buttons again after resize
-            initialize_buttons()
-
-            # Update button positions
-            update_buttons_positions()
 
 
 def initialize_buttons():
@@ -292,6 +304,57 @@ def update_buttons_positions():
     again_button.rect.center = (again_button.x_position, again_button.y_position)
     again_button.text_rect.center = (again_button.x_position, again_button.y_position)
 
+
+def create_rects():
+    global rects, board
+    rect_side = 2 * square_side
+    rects = [pygame.Rect(j * rect_side, (square_side + i * rect_side), rect_side, rect_side) for i in range(3) for j in range(3)]
+    board = ["none"] * 9  # Initialize board with "none" for each cell
+    return rects
+
+
+def draw_lines():
+    y_value = square_side
+    x_value = square_side * 2
+    for i in range(1, 5):
+        pygame.draw.line(screen, line_color, (0, y_value), (width, y_value), 4)
+        y_value += 2 * square_side
+    for i in range(1, 3):
+        pygame.draw.line(screen, line_color, (x_value, square_side), (x_value, 7 * square_side), 4)
+        x_value += 2 * square_side
+
+
+def draw_x(rect):
+    pygame.draw.line(screen, line_color, ((rect.left + square_side / 3), (rect.top + square_side / 3)), ((rect.right - square_side / 3), (rect.bottom - square_side / 3)), int(square_side / 9))
+    pygame.draw.line(screen, line_color, ((rect.left + square_side / 3), (rect.bottom - square_side / 3)), ((rect.right - square_side / 3), (rect.top + square_side / 3)), int(square_side / 9))
+
+
+def draw_o(rect):
+    pygame.draw.circle(screen, line_color, rect.center, (square_side * 3 / 4), int(square_side / 13))
+
+
+# Checks if a player has won the game
+def check_winner(board, player):
+    winning_combinations = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6]
+    ]
+
+    for combination in winning_combinations: # Iterate through all the lists in the combinations list
+        win = True
+        for index in combination: # Iterate through all the elements of the current list
+            if board[index] != player: # Uses the element as index to the board list, that has all the information. If not True, the player did not won in that way
+                win = False
+                break
+        if win:  # If win is still True after checking the combination
+            return True
+    return False # None of the list combinations has been found True
 
 
 def available_spots(board_state):
@@ -360,124 +423,5 @@ def minimax(new_board, player):
 
     return moves[best_move]
 
-
-def win():
-    pygame.display.set_caption("You Won!")
-    initialize_buttons()
-    
-    while True:
-        won_mouse_position = pygame.mouse.get_pos()
-        
-        screen.fill(background_color)  # Clear screen with background color
-        
-        won_text = font.render("YOU WON :)", True, line_color)
-        won_text_2 = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 3).render("CONGRATULATIONS!", True, line_color)
-        
-        won_rect_2 = won_text_2.get_rect(center=(width // 2, 2 * square_side))
-        won_rect = won_text.get_rect(center=(width // 2, 3 * square_side // 2))
-  
-        
-        screen.blit(won_text, won_rect)
-        screen.blit(won_text_2, won_rect_2)
-
-        # Event handling
-        for event in pygame.event.get():
-            screen_resize(event)  # Handle screen resizing
-
-            # Top right corner red "x" is clicked
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if again_button.check(won_mouse_position):
-                    play()
-                if quit_button.check(won_mouse_position):
-                    pygame.quit()
-                    sys.exit()
-        
-        quit_button.update(screen) # Draws quit button
-        again_button.update(screen) # Draws try again button
-        pygame.display.update()
-
-
-def loss():
-    pygame.display.set_caption("You Lost!")
-    initialize_buttons()
-    
-    while True:
-        loss_mouse_position = pygame.mouse.get_pos()
-        
-        screen.fill(background_color)  # Clear screen with background color
-        
-        loss_text = font.render("YOU LOST :(", True, line_color)
-        loss_text_2 = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 3).render("WHAT A PITY...", True, line_color)
-        
-        loss_rect_2 = loss_text_2.get_rect(center=(width // 2, 2 * square_side))
-        loss_rect = loss_text.get_rect(center=(width // 2, 3 * square_side // 2))
-  
-        
-        screen.blit(loss_text, loss_rect)
-        screen.blit(loss_text_2, loss_rect_2)
-
-        # Event handling
-        for event in pygame.event.get():
-            screen_resize(event)  # Handle screen resizing
-
-            # Top right corner red "x" is clicked
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if again_button.check(loss_mouse_position):
-                    play()
-                if quit_button.check(loss_mouse_position):
-                    pygame.quit()
-                    sys.exit()
-        
-        quit_button.update(screen) # Draws quit button
-        again_button.update(screen) # Draws try again button
-        pygame.display.update()
-
-
-def draw():
-    pygame.display.set_caption("It's a Draw!")
-    initialize_buttons()
-    
-    while True:
-        draw_mouse_position = pygame.mouse.get_pos()
-        
-        screen.fill(background_color)  # Clear screen with background color
-        
-        draw_text = font.render("IT'S A DRAW :/", True, line_color)
-        draw_text_2 = pygame.font.Font("assets/JetBrainsMono-Regular.ttf", square_side // 3).render("AT LEAST IT'S NOT A DEFEAT...", True, line_color)
-        
-        draw_rect_2 = draw_text_2.get_rect(center=(width // 2, 2 * square_side))
-        draw_rect = draw_text.get_rect(center=(width // 2, 3 * square_side // 2))
-  
-        
-        screen.blit(draw_text, draw_rect)
-        screen.blit(draw_text_2, draw_rect_2)
-
-        # Event handling
-        for event in pygame.event.get():
-            screen_resize(event)  # Handle screen resizing
-
-            # Top right corner red "x" is clicked
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if again_button.check(draw_mouse_position):
-                    play()
-                if quit_button.check(draw_mouse_position):
-                    pygame.quit()
-                    sys.exit()
-        
-        quit_button.update(screen) # Draws quit button
-        again_button.update(screen) # Draws try again button
-        pygame.display.update()
 
 main_menu()
