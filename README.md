@@ -219,11 +219,13 @@ It is a recursive functions, so, it has the base cases:
 
 After, it loops through all the available spots, make a play and call minimax within that modified board. This way, it can iterate through all the possible plays the AI and the player can make. It stores the best score for each move and then return the best move for that board.
 
- I learned how to create a minimax function with is tutorial from [FreeCodeCamp](https://www.freecodecamp.org/news/how-to-make-your-tic-tac-toe-game-unbeatable-by-using-the-minimax-algorithm-9d690bad4b37/). If you are interested in knowing how it works, take a look at the link.
+I learned how to create a minimax function with is tutorial from [FreeCodeCamp](https://www.freecodecamp.org/news/how-to-make-your-tic-tac-toe-game-unbeatable-by-using-the-minimax-algorithm-9d690bad4b37/). If you are interested in knowing how it works, take a look at the link.
 
 ### These were all the function from the main.py file, and now, you know all you can possible know about the game.
 
 If you want to understand the game a little better, just take a look at the main,py file. In my view, it's pretty readable and i did a bunch of comments. Contact me if there's any doubt about the project.
+
+---
 
 ## I loved taking CS50. I am Lucas and this is my project!
 Thank you!
